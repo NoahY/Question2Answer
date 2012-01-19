@@ -43,7 +43,7 @@
 	Standard database failure handler function which bring up the install/repair/upgrade page
 */
 	{
-		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
 		$pass_failure_type=$type;
 		$pass_failure_errno=$errno;
@@ -61,7 +61,7 @@
 	Queue any pending requests which are required independent of which page will be shown
 */
 	{
-		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
 		qa_preload_options();
 		$loginuserid=qa_get_logged_in_userid();
@@ -113,7 +113,7 @@
 	If the user has Javascript on, these should come through Ajax rather than here.
 */
 	{
-		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
 		global $qa_vote_error_html;
 		
@@ -176,7 +176,7 @@
 	Run the appropriate qa-page-*.php file for this request and return back the $qa_content it passed 
 */
 	{
-		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
 		$requestlower=strtolower(qa_request());
 		$requestparts=qa_request_parts();
@@ -214,7 +214,7 @@
 	Output the $qa_content via the theme class after doing some pre-processing, mainly relating to Javascript
 */
 	{
-		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
 		global $qa_template;
 		
@@ -222,10 +222,15 @@
 		
 	//	Set appropriate selected flags for navigation (not done in qa_content_prepare() since it also applies to sub-navigation)
 		
+		$selfpathhtml=qa_path_html($requestlower);
+		
 		foreach ($qa_content['navigation'] as $navtype => $navigation)
 			if (is_array($navigation) && ($navtype!='cat'))
 				foreach ($navigation as $navprefix => $navlink)
-					if (substr($requestlower.'$', 0, strlen($navprefix)) == $navprefix)
+					if (
+						(substr($requestlower.'$', 0, strlen($navprefix)) == $navprefix) ||
+						(strtolower(@$navlink['url'])==$selfpathhtml) // this check is needed for custom links that go to Q2A pages
+					)
 						$qa_content['navigation'][$navtype][$navprefix]['selected']=true;
 	
 	//	Slide down notifications
@@ -357,7 +362,7 @@
 	If the key of an element ends in /, it should be used for any request with that key as its prefix
 */
 	{
-		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
 		return array(
 			'account' => 'qa-page-account.php',
@@ -421,7 +426,7 @@
 	in the context of the categories in $categoryids (if not null)
 */
 	{
-		if (qa_to_override(__FUNCTION__)) return qa_call_override(__FUNCTION__, $args=func_get_args());
+		if (qa_to_override(__FUNCTION__)) { $args=func_get_args(); return qa_call_override(__FUNCTION__, $args); }
 		
 		global $qa_template, $qa_vote_error_html;
 		
@@ -664,12 +669,17 @@
 				$qa_content['notices'][]=qa_notice_form($notice['noticeid'], qa_viewer_html($notice['content'], $notice['format']), $notice);
 			
 		} else {
+			require_once QA_INCLUDE_DIR.'qa-util-string.php';
+			
 			$loginmodules=qa_load_modules_with('login', 'login_html');
 			
 			foreach ($loginmodules as $tryname => $module) {
 				ob_start();
 				$module->login_html(isset($topath) ? (qa_opt('site_url').$topath) : qa_path($request, $_GET, qa_opt('site_url')), 'menu');
-				$qa_content['navigation']['user'][$tryname]=array('label' => ob_get_clean());
+				$label=ob_get_clean();
+
+				if (strlen($label))
+					$qa_content['navigation']['user'][implode('-', qa_string_to_words($tryname))]=array('label' => $label);
 			}
 			
 			if (!empty($userlinks['login']))

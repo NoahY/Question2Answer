@@ -91,7 +91,8 @@
 		Output each passed parameter on a separate line - see output_array() comments
 	*/
 		{
-			$this->output_array(func_get_args());
+			$args=func_get_args();
+			$this->output_array($args);
 		}
 
 		
@@ -615,14 +616,14 @@
 				
 			$this->output('<H1>');
 
-			if (isset($title))
-				$this->output($title);
-
 			if (isset($favorite)) {
 				$this->output('<DIV CLASS="qa-favoriting" '.@$favorite['favorite_tags'].'>');
 				$this->favorite_inner_html($favorite);
 				$this->output('</DIV>');
 			}
+
+			if (isset($title))
+				$this->output($title);
 
 			if (isset($this->content['error'])) {
 				$this->output('</H1>');
